@@ -1,0 +1,13 @@
+# Exclude unnecessary files from export (GitHub/Packagist)
+.gitignore                export-ignore
+.gitattributes            export-ignore
+.editorconfig             export-ignore
+phpunit.xml               export-ignore
+README.md                 export-ignore
+tests/                    export-ignore
+.env                      export-ignore
+.env.example              export-ignore
+docs/                     export-ignore
+storage/                  export-ignore
+.vscode/                  export-ignore
+composer.lock             export-ignore
