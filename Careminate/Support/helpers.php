@@ -1,5 +1,6 @@
 <?php declare(strict_types=1);
 
+use Careminate\Encryption\Encrypter;
 use Careminate\Http\Responses\Response;
 use Careminate\Http\Responses\RedirectResponse;
 
@@ -139,5 +140,36 @@ if (! function_exists('route_path')) {
     function route_path(?string $file = null)
     {
         return ! is_null($file) ? config('route.path') . '/' . $file : config('route.path');
+    }
+}
+
+if (!function_exists('encrypter')) {
+    function encrypter(): Encrypter
+    {
+        static $instance = null;
+
+        if ($instance === null) {
+            $key = env('APP_KEY');
+            if (!$key) {
+                throw new RuntimeException("Missing APP_KEY in .env file.");
+            }
+            $instance = new Encrypter($key);
+        }
+
+        return $instance;
+    }
+}
+
+if (!function_exists('encrypt')) {
+    function encrypt(string $data): string
+    {
+        return encrypter()->encrypt($data);
+    }
+}
+
+if (!function_exists('decrypt')) {
+    function decrypt(string $payload): string
+    {
+        return encrypter()->decrypt($payload);
     }
 }
