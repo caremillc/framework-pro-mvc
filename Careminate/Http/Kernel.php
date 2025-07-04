@@ -7,7 +7,7 @@ use Careminate\Http\Responses\Response;
 
 class Kernel 
 {
-     protected Router $router;
+    protected Router $router;
 
     public function __construct()
     {
