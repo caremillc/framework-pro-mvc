@@ -1,14 +1,28 @@
-<?php declare(strict_types=1);
+<?php declare(strict_types = 1);
 
 namespace Careminate\Routing;
 
-use Closure;
-use Careminate\Http\Requests\Request;
+use Exception;
+use Careminate\Logs\Log;
 use Careminate\Http\Responses\Response;
 use Careminate\Routing\Contracts\RouterInterface;
 
+/**
+ * Router class responsible for handling HTTP routing in the application.
+ * 
+ * This class implements the RouterInterface and provides functionality to:
+ * - Register routes for different HTTP methods
+ * - Dispatch requests to appropriate controllers/actions
+ * - Handle route parameters and middleware
+ * - Manage public path for static assets
+ */
 class Router implements RouterInterface
 {
+    /**
+     * Array of registered routes grouped by HTTP method.
+     * 
+     * @var array<string, array>
+     */
     protected static array $routes = [
         'GET'    => [],
         'POST'   => [],
@@ -17,48 +31,129 @@ class Router implements RouterInterface
         'DELETE' => [],
     ];
 
-    public static function add(string $method, string $uri, callable|array $action): void
+    /**
+     * The public directory path where assets are served from.
+     * 
+     * @var string
+     */
+    protected static string $public;
+
+    /**
+     * Sets or gets the public path for the application.
+     * 
+     * @param string|null $bin The path to set as public directory (optional)
+     * @return string The current public path
+     */
+    public static function public_path(?string $bin = null): string
     {
-        $method = strtoupper($method);
-        self::$routes[$method][$uri] = $action;
+        if (! is_null($bin)) {
+            static::$public = trim($bin, '/');
+        }
+        return static::$public ?? 'public';
     }
 
-    public function dispatch(Request $request): Response
+    /**
+     * Adds a new route to the router.
+     * 
+     * @param string $method HTTP method (GET, POST, etc.)
+     * @param string $route The URI pattern to match
+     * @param mixed $controller Either a class name or a Closure
+     * @param string|null $action The method name if controller is a class
+     * @param array $middleware Array of middleware to apply
+     * @return void
+     */
+    public static function add(string $method, string $route, $controller, $action = null, array $middleware = []): void
     {
-        $method = $request->getMethod();
-        $uri = $request->getPathInfo();
+        // Normalize the route by trimming slashes
+        $route = trim($route, '/');
+        
+        // Store the route with its associated controller, action and middleware
+        static::$routes[strtoupper($method)][$route] = compact('controller', 'action', 'middleware');
+    }
 
-        $routes = self::$routes[$method] ?? [];
+    /**
+     * Returns all registered routes.
+     * 
+     * @return array The complete routes array
+     */
+    public function routes(): array
+    {
+        return static::$routes;
+    }
 
-        foreach ($routes as $route => $action) {
-            if ($route === $uri) {
-                return $this->callAction($action, $request);
+    /**
+     * Dispatches the request to the appropriate route handler.
+     * 
+     * @param string $uri The request URI
+     * @param string $method The HTTP method
+     * @return Response The response object
+     * @throws Exception When route or controller/method not found
+     */
+   public static function dispatch($uri, $method): Response
+{
+    // Handle favicon requests with empty response
+    if ($uri === '/favicon.ico') {
+        return new Response('', 204);
+    }
+
+    // Extract path from URI and remove public directory prefix
+    $path = parse_url($uri, PHP_URL_PATH);
+    $uri = trim(str_replace(static::public_path(), '', $path), '/');
+
+    // Check all routes for the current HTTP method
+    foreach (static::$routes[$method] as $route => $routeData) {
+        // Convert route parameters to regex pattern
+        $pattern = preg_replace('/\{([a-zA-Z0-9_]+)\}/', '(?P<$1>[a-zA-Z0-9_]+)', $route);
+        $pattern = "#^$pattern$#";
+
+        if (preg_match($pattern, $uri, $matches)) {
+            // Extract named parameters from matches
+            $params = array_filter($matches, 'is_string', ARRAY_FILTER_USE_KEY);
+
+            $controller = $routeData['controller'];
+            $action = $routeData['action'] ?? null;
+
+            // Handle closure routes
+            if ($controller instanceof \Closure) {
+                ob_start();
+                $returned = call_user_func_array($controller, $params);
+                $output = ob_get_clean();
+
+                if ($returned instanceof Response) {
+                    return $returned;
+                }
+
+                $content = $returned !== null ? $returned : $output;
+                return new Response($content, 200);
             }
-        }
 
-        return new Response("Route [$method $uri] not found", 404);
-    }
-
-    protected function callAction(callable|array $action, Request $request): Response
-    {
-        if ($action instanceof Closure) {
-            $result = $action($request);
-        } elseif (is_array($action) && count($action) === 2) {
-            [$controller, $method] = $action;
-
-            if (is_string($controller)) {
-                $controller = new $controller();
+            // Handle controller class routes
+            if (! class_exists($controller)) {
+                throw new \Exception("Controller class {$controller} not found");
             }
 
-            $result = $controller->$method($request);
-        } else {
-            throw new \RuntimeException('Invalid route action.');
-        }
+            $controllerInstance = new $controller();
 
-        if ($result instanceof Response) {
-            return $result;
-        }
+            if (! method_exists($controllerInstance, $action)) {
+                throw new \Exception("Method {$action} not found in controller {$controller}");
+            }
 
-        return new Response((string) $result);
+            ob_start();
+            $returned = call_user_func_array([$controllerInstance, $action], $params);
+            $output = ob_get_clean();
+
+            if ($returned instanceof Response) {
+                return $returned;
+            }
+
+            $content = $returned !== null ? $returned : $output;
+
+            return new Response($content, 200);
+        }
     }
+
+     // No matching route found
+    throw new Log("Route '{$uri}' not found.",Response::HTTP_NOT_FOUND);
+}
+
 }
