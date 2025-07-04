@@ -41,6 +41,13 @@ if (!function_exists('env')) {
     }
 }
 
+// if (! function_exists('env')) {
+//     function env(string $key, $default = null)
+//     {
+//         return $_ENV[$key] ?? $default;
+//     }
+// }
+
 if (! function_exists('response')) {
     /**
      * Create a response instance.
@@ -117,12 +124,28 @@ if (! function_exists('base_path')) {
     }
 }
 
+// if (! function_exists('base_path')) {
+//     function base_path(string $path = ''): string
+//     {
+//         return getcwd() . ($path ? '/' . ltrim($path, '/') : '');
+//     }
+// }
+
+
 if (! function_exists('storage_path')) {
    function storage_path(string $path = ''): string
     {
         return BASE_PATH . '/storage' . ($path ? '/' . ltrim($path, '/') : '');
     }
 }
+
+// if (! function_exists('storage_path')) {
+//     function storage_path(string $path = ''): string
+//     {
+//         return base_path('storage') . ($path ? '/' . ltrim($path, '/') : '');
+//     }
+// }
+
 
 if (! function_exists('config')) {
     function config(?string $file = null)
@@ -135,6 +158,26 @@ if (! function_exists('config')) {
         return $file;
     }
 }
+
+// if (! function_exists('config')) {
+//     function config(string $key, $default = null)
+//     {
+//         static $configs = [];
+        
+//         $file = explode('.', $key)[0];
+        
+//         if (!isset($configs[$file])) {
+//             $configPath = base_path("config/{$file}.php");
+//             $configs[$file] = file_exists($configPath) ? require $configPath : [];
+//         }
+        
+//         return array_reduce(
+//             explode('.', $key),
+//             fn($carry, $segment) => $carry[$segment] ?? $default,
+//             $configs[$file]
+//         );
+//     }
+// }
 
 if (! function_exists('route_path')) {
     function route_path(?string $file = null)
@@ -171,5 +214,24 @@ if (!function_exists('decrypt')) {
     function decrypt(string $payload): string
     {
         return encrypter()->decrypt($payload);
+    }
+}
+
+if (!function_exists('load_env')) {
+    function load_env(): void
+    {
+        $envFile = base_path('.env');
+        if (!file_exists($envFile)) return;
+
+        $lines = file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+
+        foreach ($lines as $line) {
+            if (str_starts_with(trim($line), '#')) continue;
+
+            [$name, $value] = array_pad(explode('=', $line, 2), 2, null);
+            if ($name !== null) {
+                $_ENV[trim($name)] = trim($value, "\"'");
+            }
+        }
     }
 }
