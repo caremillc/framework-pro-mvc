@@ -12,7 +12,7 @@ class Kernel
     public function __construct()
     {
         $this->router = new Router();
-        $this->registerRoutes();
+        $this->registerWebRoutes();
     }
 
    public function handle(Request $request): Response
@@ -20,10 +20,16 @@ class Kernel
         return $this->router->dispatch($request->getPathInfo(), $request->getMethod());
     }
 
-    protected function registerRoutes(): void
+    protected function registerWebRoutes(): void
     {
         // require base_path('routes/web.php');
         require route_path('web.php');
+    }
+
+    protected function registerApiRoutes(): void
+    {
+        // require base_path('routes/api.php');
+        require route_path('api.php');
     }
 
     public function terminate(Request $request, Response $response): void
