@@ -17,6 +17,7 @@ class Kernel
 
    public function handle(Request $request): Response
     {
+        // dd($request);
         return $this->router->dispatch($request->getPathInfo(), $request->getMethod());
     }
 
