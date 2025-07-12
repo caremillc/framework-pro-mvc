@@ -4,11 +4,15 @@ namespace Careminate\Routing;
 class Segment
 {
 
+    // public static function uri(): string
+    // {
+    //     return str_replace(ROOT_DIR, '', parse_url($_SERVER['REQUEST_URI'])['path']);
+    // }
     public static function uri(): string
     {
-        return str_replace(ROOT_DIR, '', parse_url($_SERVER['REQUEST_URI'])['path']);
+        $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH) ?? '/';
+        return trim(str_replace(ROOT_DIR, '', $path), '/');
     }
-
     /**
      * @param int $offset
      *
@@ -21,9 +25,14 @@ class Segment
         return isset($segments[$offset]) ? $segments[$offset] : '';
     }
 
+    // public static function all(): array
+    // {
+    //     return explode('/', static::uri());
+    // }
+
     public static function all(): array
     {
-        return explode('/', static::uri());
+        return array_values(array_filter(explode('/', static::uri())));
     }
 
 }

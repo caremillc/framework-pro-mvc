@@ -16,12 +16,13 @@ class Kernel
     {
         $this->router = new Router();
        
-        var_dump(Segment::get(1));
+        // var_dump(Segment::get(0));
 
-         if (Segment::get(1) == 'api') {
-             $this->registerApiRoutes();
+        $firstSegment = Segment::get(0); // safer
+        if ($firstSegment === 'api') {
+            $this->registerApiRoutes();
         } else {
-             $this->registerWebRoutes();
+            $this->registerWebRoutes();
         }
     }
 
