@@ -1,6 +1,8 @@
 <?php declare (strict_types = 1);
 namespace Careminate\Support;
 
+use Careminate\Encryption\Encrypter;
+
 class Str
 {
     public static function camel(string $value): string
@@ -111,5 +113,42 @@ class Str
     {
         // Basic ASCII conversion; can be extended for UTF-8 mappings
         return iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $value);
+    }
+}
+
+
+#==============================
+      
+
+#============================ 
+
+if (!function_exists('encrypter')) {
+    function encrypter(): Encrypter
+    {
+        static $instance = null;
+
+        if ($instance === null) {
+            $key = env('APP_KEY');
+            if (!$key) {
+                throw new \RuntimeException("Missing APP_KEY in .env file.");
+            }
+            $instance = new Encrypter($key);
+        }
+
+        return $instance;
+    }
+}
+
+if (!function_exists('encrypt')) {
+    function encrypt(string $data): string
+    {
+        return encrypter()->encrypt($data);
+    }
+}
+
+if (!function_exists('decrypt')) {
+    function decrypt(string $payload): string
+    {
+        return encrypter()->decrypt($payload);
     }
 }
