@@ -177,3 +177,25 @@ if (!function_exists('decrypt')) {
 }
 
 // end env codes
+
+// start load env
+if (!function_exists('load_env')) {
+    function load_env(): void
+    {
+        $envFile = base_path('.env');
+        if (!file_exists($envFile)) return;
+
+        $lines = file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+
+        foreach ($lines as $line) {
+            if (str_starts_with(trim($line), '#')) continue;
+
+            [$name, $value] = array_pad(explode('=', $line, 2), 2, null);
+            if ($name !== null) {
+                $_ENV[trim($name)] = trim($value, "\"'");
+            }
+        }
+    }
+}
+
+// end load env
