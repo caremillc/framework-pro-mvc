@@ -26,9 +26,9 @@ class Kernel
         }
     }
 
-    public function handle(Request $request): Response
+   public function handle(Request $request): Response
     {
-        return $this->router->dispatch($request);
+        return $this->router->dispatch($request->getPathInfo(), $request->getMethod());
     }
 
     protected function registerWebRoutes(): void
