@@ -1,13 +1,28 @@
 <?php declare (strict_types = 1);
 namespace Careminate\Tests\Unit;
 
-use Careminate\Container\Container;
-use Careminate\Exceptions\ContainerException;
-use Careminate\Tests\Unit\DependantClass;
 use PHPUnit\Framework\TestCase;
+use Careminate\Container\Container;
+use Careminate\Tests\Unit\DependantClass;
+use Careminate\Exceptions\ContainerException;
+use Careminate\Logs\Contracts\LoggerInterface;
 
 class ContainerTest extends TestCase
 {
+    public function test_can_resolve_logger()
+    {
+        $container = new Container();
+
+        // Either Option 1 (factory)
+        $container->bind(LoggerInterface::class, fn() => new \Careminate\Logs\Log("Test log"));
+
+        // Or Option 2 (real logger)
+        // $container->bind(LoggerInterface::class, \Careminate\Logs\FileLogger::class);
+
+        $logger = $container->make(LoggerInterface::class);
+
+        $this->assertInstanceOf(LoggerInterface::class, $logger);
+    }
      public function test_services_can_be_recursively_autowired()
     {
         $container = new Container();

@@ -1,7 +1,9 @@
-<?php declare(strict_types=1);
+<?php declare (strict_types = 1);
 namespace Careminate\Logs;
 
-class Log extends \Exception 
+use Careminate\Logs\Contracts\LoggerInterface;
+
+class Log extends \Exception implements LoggerInterface
 {
     protected $log_file;
     
@@ -40,6 +42,11 @@ class Log extends \Exception
         include base_path('resources/views/errors/exception.tpl.php');
         exit;
     }
+
+    public function log(string $message): void
+    {
+        $logMessage = date('Y-m-d H:i:s') . " - Log: {$message}\n";
+        file_put_contents($this->log_file, $logMessage, FILE_APPEND);
+    }
+
 }
-
-
