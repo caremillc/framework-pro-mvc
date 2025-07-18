@@ -2,10 +2,12 @@
 
 namespace Careminate\Routing;
 
-use Careminate\Http\Responses\Response;
-use Careminate\Logs\Log;
-use Careminate\Routing\Contracts\RouterInterface;
 use Exception;
+use Careminate\Logs\Log;
+use Careminate\Http\Responses\Response;
+use Careminate\Exceptions\NotFoundException;
+use Careminate\Routing\Contracts\RouterInterface;
+use Careminate\Exceptions\HttpRequestMethodException;
 
 /**
  * Router class responsible for handling HTTP routing in the application.
@@ -133,13 +135,13 @@ class Router implements RouterInterface
 
                 // Handle controller class routes
                 if (! class_exists($controller)) {
-                    throw new \Exception("Controller class {$controller} not found");
+                    throw new NotFoundException("Controller class {$controller} not found");
                 }
 
                 $controllerInstance = new $controller();
 
                 if (! method_exists($controllerInstance, $action)) {
-                    throw new \Exception("Method {$action} not found in controller {$controller}");
+                    throw new HttpRequestMethodException("Method {$action} not found in controller {$controller}");
                 }
 
                 ob_start();
