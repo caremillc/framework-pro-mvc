@@ -2,18 +2,16 @@
 namespace Careminate\Http;
 
 use App\Http\HttpKernel;
+use Careminate\Routing\Router;
+use Careminate\Routing\Segment;
 use Careminate\Http\Requests\Request;
 use Careminate\Http\Responses\Response;
 use Careminate\Routing\Contracts\RouterInterface;
-use Careminate\Routing\Router;
-use Careminate\Routing\Segment;
+use Careminate\Container\Contracts\ContainerInterface;
 
 class Kernel
 {
-    // protected Router $router;
-    protected RouterInterface $router;
-
-    public function __construct(RouterInterface $router)
+    public function __construct(protected RouterInterface $router, private ContainerInterface $container)
     {
         $this->router = new Router();
 
@@ -29,7 +27,9 @@ class Kernel
 
     public function handle(Request $request): Response
     {
-        return $this->router->dispatch($request->getPathInfo(), $request->getMethod());
+        $uri       = $request->getPathInfo();    // or $request->getPath()
+        $method    = $request->getMethod();  // e.g., GET, POST
+        return Router::dispatch($uri, $method, $this->container);
     }
 
     protected function registerWebRoutes(): void

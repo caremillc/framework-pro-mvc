@@ -2,12 +2,13 @@
 
 namespace Careminate\Routing;
 
-use Exception;
-use Careminate\Logs\Log;
-use Careminate\Http\Responses\Response;
-use Careminate\Exceptions\NotFoundException;
-use Careminate\Routing\Contracts\RouterInterface;
+use Careminate\Container\Contracts\ContainerInterface;
 use Careminate\Exceptions\HttpRequestMethodException;
+use Careminate\Exceptions\NotFoundException;
+use Careminate\Http\Responses\Response;
+use Careminate\Logs\Log;
+use Careminate\Routing\Contracts\RouterInterface;
+use Exception;
 
 /**
  * Router class responsible for handling HTTP routing in the application.
@@ -87,7 +88,7 @@ class Router implements RouterInterface
         return static::$routes;
     }
 
-     public function setRoutes(array $routes): void
+    public function setRoutes(array $routes): void
     {
         self::$routes = $routes;
     }
@@ -99,7 +100,8 @@ class Router implements RouterInterface
      * @return Response The response object
      * @throws Exception When route or controller/method not found
      */
-    public static function dispatch($uri, $method): Response
+                                                                                           // public static function dispatch($uri, $method): Response
+    public static function dispatch($uri, $method, ContainerInterface $container): Response//ContainerInterface $container
     {
         // Handle favicon requests with empty response
         if ($uri === '/favicon.ico') {
@@ -142,7 +144,8 @@ class Router implements RouterInterface
                     throw new NotFoundException("Controller class {$controller} not found");
                 }
 
-                $controllerInstance = new $controller();
+                // $controllerInstance = new $controller();
+                $controllerInstance = $container->has($controller) ? $container->get($controller) : new $controller();
 
                 if (! method_exists($controllerInstance, $action)) {
                     throw new HttpRequestMethodException("Method {$action} not found in controller {$controller}");

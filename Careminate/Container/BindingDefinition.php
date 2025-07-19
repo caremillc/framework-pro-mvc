@@ -21,6 +21,12 @@ class BindingDefinition
         return $this;
     }
 
+    public function addArguments(array $arguments): static
+    {
+        $this->arguments = $arguments;
+        return $this;
+    }
+
     public function getAbstract(): string
     {
         return $this->abstract;
