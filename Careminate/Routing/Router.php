@@ -100,8 +100,8 @@ class Router implements RouterInterface
      * @return Response The response object
      * @throws Exception When route or controller/method not found
      */
-                                                                                           // public static function dispatch($uri, $method): Response
-    public static function dispatch($uri, $method, ContainerInterface $container): Response//ContainerInterface $container
+     // public static function dispatch($uri, $method): Response
+    public static function dispatch($uri, $method, ContainerInterface $container): Response //ContainerInterface $container
     {
         // Handle favicon requests with empty response
         if ($uri === '/favicon.ico') {
@@ -129,6 +129,7 @@ class Router implements RouterInterface
                 if ($controller instanceof \Closure) {
                     ob_start();
                     $returned = call_user_func_array($controller, $params);
+                    
                     $output   = ob_get_clean();
 
                     if ($returned instanceof Response) {
@@ -152,7 +153,10 @@ class Router implements RouterInterface
                 }
 
                 ob_start();
-                $returned = call_user_func_array([$controllerInstance, $action], $params);
+                 // $returned = call_user_func_array([$controllerInstance, $action], $params);
+		        $resolvedParams = self::resolveMethodDependencies([$controllerInstance, $action],$params, $container);
+
+		       $returned = call_user_func_array([$controllerInstance, $action], $resolvedParams);
                 $output   = ob_get_clean();
 
                 if ($returned instanceof Response) {
@@ -169,6 +173,31 @@ class Router implements RouterInterface
         throw new Log("Route '{$uri}' not found.", Response::HTTP_NOT_FOUND);
     }
 
+    protected static function resolveMethodDependencies(callable $callable, array $routeParams, ContainerInterface $container): array
+	{
+		$reflection = new \ReflectionMethod($callable[0], $callable[1]);
+		$dependencies = [];
+
+		foreach ($reflection->getParameters() as $param) {
+			$name = $param->getName();
+			$type = $param->getType();
+
+			if ($type && ! $type->isBuiltin()) {
+				// Class typehinted parameter, resolve from container
+				$dependencies[] = $container->get($type->getName());
+			} elseif (array_key_exists($name, $routeParams)) {
+				// Named route parameter
+				$dependencies[] = $routeParams[$name];
+			} elseif ($param->isDefaultValueAvailable()) {
+				$dependencies[] = $param->getDefaultValue();
+			} else {
+				throw new \RuntimeException("Unable to resolve method parameter \${$name}");
+			}
+		}
+
+		return $dependencies;
+	}
+    
     public static function group(array $attributes): void
     {
         static::$groupStack[] = $attributes;
