@@ -11,6 +11,11 @@ use Careminate\Container\Contracts\ContainerInterface;
 
 class Kernel
 {
+    private string $appEnv;
+    private string $appKey;
+    private string $appVersion;
+
+    
     public function __construct(protected RouterInterface $router, private ContainerInterface $container)
     {
         $this->router = new Router();
@@ -22,6 +27,19 @@ class Kernel
             $this->registerApiRoutes();
         } else {
             $this->registerWebRoutes();
+        }
+
+         // Check .env file and configuration values
+        if (!file_exists('.env') || !is_readable('.env')) {
+            throw new \RuntimeException('.env file is missing or not readable.');
+        }
+
+        $this->appEnv = $this->container->get('APP_ENV');
+        $this->appKey = $this->container->get('APP_KEY');
+        $this->appVersion = $this->container->get('APP_VERSION');
+
+        if (empty($this->appKey) || empty($this->appEnv) || empty($this->appVersion)) {
+            throw new \RuntimeException('One or more required environment variables are missing.');
         }
     }
 
