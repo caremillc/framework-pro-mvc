@@ -1,4 +1,7 @@
-<?php declare (strict_types = 1);
+<?php
+
+declare(strict_types=1);
+
 namespace Careminate\Container;
 
 use Exception;
@@ -67,16 +70,28 @@ class Container implements ContainerInterface
         $definition = $this->bindings[$abstract] ?? new BindingDefinition($abstract);
 
         $concrete = $definition instanceof BindingDefinition
-        ? $definition->getConcrete()
-        : $definition;
+            ? $definition->getConcrete()
+            : $definition;
 
         $arguments = $definition instanceof BindingDefinition
-        ? $definition->getArguments()
-        : [];
+            ? $definition->getArguments()
+            : [];
 
+        // $object = is_callable($concrete)
+        //     ? $concrete($this, $parameters)
+        //     : $this->build($concrete, [...$arguments, ...$parameters]);
+        
         $object = is_callable($concrete)
         ? $concrete($this, $parameters)
         : $this->build($concrete, [ ...$arguments, ...$parameters]);
+
+        if ($definition instanceof BindingDefinition) {
+            foreach ($definition->getMethodCalls() as $call) {
+                $method = $call['method'];
+                $args   = $call['arguments'];
+                call_user_func_array([$object, $method], $args);
+            }
+        }
 
         $this->runAfterResolvingCallbacks($abstract, $object);
 
@@ -125,12 +140,11 @@ class Container implements ContainerInterface
                 if (isset($this->contextual[$concrete][$paramType])) {
                     $implementation = $this->contextual[$concrete][$paramType];
                     $dependencies[] = is_callable($implementation)
-                    ? $implementation($this)
-                    : $this->make($implementation);
+                        ? $implementation($this)
+                        : $this->make($implementation);
                 } else {
                     $dependencies[] = $this->make($paramType);
                 }
-
             }
         }
 
@@ -213,21 +227,30 @@ class Container implements ContainerInterface
     }
 
     public function registerProvider(ServiceProvider|string $provider): void
-{
-    $provider = is_string($provider) ? new $provider($this) : $provider;
+    {
+        $provider = is_string($provider) ? new $provider($this) : $provider;
 
-    if (! $provider instanceof ServiceProvider) {
-        throw new \InvalidArgumentException('Invalid service provider class.');
+        if (! $provider instanceof ServiceProvider) {
+            throw new \InvalidArgumentException('Invalid service provider class.');
+        }
+
+        $provider->register();
+        $provider->boot();
     }
 
-    $provider->register();
-    $provider->boot();
-}
-
-public function registerProviders(array $providers): void
-{
-    foreach ($providers as $provider) {
-        $this->registerProvider($provider);
+    public function registerProviders(array $providers): void
+    {
+        foreach ($providers as $provider) {
+            $this->registerProvider($provider);
+        }
     }
-}
+
+    public function extend(string $abstract): BindingDefinition
+    {
+        if (!isset($this->bindings[$abstract])) {
+            throw new \InvalidArgumentException("Cannot extend service [$abstract] because it is not bound.");
+        }
+
+        return $this->bindings[$abstract];
+    }
 }

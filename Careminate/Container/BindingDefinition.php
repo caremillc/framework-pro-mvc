@@ -7,6 +7,7 @@ class BindingDefinition
     protected string $abstract;
     protected mixed $concrete;
     protected array $arguments = [];
+    protected array $methodCalls = [];
 
     public function __construct(string $abstract, mixed $concrete = null)
     {
@@ -33,5 +34,16 @@ class BindingDefinition
     public function getArguments(): array
     {
         return $this->arguments;
+    }
+
+    public function addMethodCall(string $method, array $arguments = []): static
+    {
+        $this->methodCalls[] = compact('method', 'arguments');
+        return $this;
+    }
+
+    public function getMethodCalls(): array
+    {
+        return $this->methodCalls;
     }
 }

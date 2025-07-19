@@ -87,6 +87,10 @@ class Router implements RouterInterface
         return static::$routes;
     }
 
+     public function setRoutes(array $routes): void
+    {
+        self::$routes = $routes;
+    }
     /**
      * Dispatches the request to the appropriate route handler.
      *
