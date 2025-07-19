@@ -1,21 +1,22 @@
-<?php declare(strict_types=1);
+<?php declare (strict_types = 1);
 namespace Careminate\Http;
 
 use App\Http\HttpKernel;
-use Careminate\Routing\Router;
-use Careminate\Routing\Segment;
 use Careminate\Http\Requests\Request;
 use Careminate\Http\Responses\Response;
+use Careminate\Routing\Contracts\RouterInterface;
+use Careminate\Routing\Router;
+use Careminate\Routing\Segment;
 
-class Kernel 
+class Kernel
 {
+    // protected Router $router;
+    protected RouterInterface $router;
 
-    protected Router $router;
-
-    public function __construct()
+    public function __construct(RouterInterface $router)
     {
         $this->router = new Router();
-       
+
         // var_dump(Segment::get(0));
 
         $firstSegment = Segment::get(0); // safer
@@ -26,22 +27,22 @@ class Kernel
         }
     }
 
-   public function handle(Request $request): Response
+    public function handle(Request $request): Response
     {
         return $this->router->dispatch($request->getPathInfo(), $request->getMethod());
     }
 
     protected function registerWebRoutes(): void
     {
-         foreach (HttpKernel::$globalWeb as $global) {
+        foreach (HttpKernel::$globalWeb as $global) {
             new $global();
         }
         require route_path('web.php');
     }
 
-     protected function registerApiRoutes(): void
+    protected function registerApiRoutes(): void
     {
-         foreach (HttpKernel::$globalApi as $global) {
+        foreach (HttpKernel::$globalApi as $global) {
             new $global();
         }
         require route_path('api.php');
@@ -52,4 +53,3 @@ class Kernel
         // Perform any cleanup
     }
 }
-

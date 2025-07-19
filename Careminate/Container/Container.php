@@ -1,9 +1,10 @@
-<?php declare(strict_types=1);
+<?php declare (strict_types = 1);
 namespace Careminate\Container;
 
 use Exception;
 use ReflectionClass;
 use ReflectionException;
+use Careminate\Providers\ServiceProvider;
 use Careminate\Exceptions\ContainerException;
 use Careminate\Container\Contracts\ContainerInterface;
 
@@ -15,24 +16,29 @@ class Container implements ContainerInterface
     protected array $tags                    = [];
     protected array $resolvingCallbacks      = [];
     protected array $afterResolvingCallbacks = [];
+    protected array $definitions             = [];
+    protected array $contextual              = [];
 
     // Bind a service
-    public function bind(string $abstract, callable | string | null $concrete = null): void
+    public function bind(string $abstract, callable | string | null $concrete = null): BindingDefinition
     {
-        $this->bindings[$abstract] = $concrete ?? $abstract;
+        $definition                = new BindingDefinition($abstract, $concrete);
+        $this->bindings[$abstract] = $definition;
+        return $definition;
     }
 
     // OPTIONAL: Add this to your Container class if you want backward compatibility
-    public function add(string $abstract, callable|string|null $concrete = null): void
+    public function add(string $abstract, callable | string | null $concrete = null): void
     {
         $this->bind($abstract, $concrete);
     }
 
     // Bind a singleton
-    public function singleton(string $abstract, callable | string | null $concrete = null): void
+    public function singleton(string $abstract, callable | string | null $concrete = null): BindingDefinition
     {
-        $this->bind($abstract, $concrete);
+        $definition                 = $this->bind($abstract, $concrete);
         $this->instances[$abstract] = null;
+        return $definition;
     }
 
     // Bind an already instantiated object
@@ -52,20 +58,28 @@ class Container implements ContainerInterface
     {
         $abstract = $this->getAlias($abstract);
 
-        // Return existing singleton
         if (array_key_exists($abstract, $this->instances) && $this->instances[$abstract] !== null) {
             return $this->instances[$abstract];
         }
 
         $this->runResolvingCallbacks($abstract);
 
-        // Resolve via binding or auto-wiring
-        $concrete = $this->bindings[$abstract] ?? $abstract;
-        $object   = is_callable($concrete) ? $concrete($this, $parameters) : $this->build($concrete, $parameters);
+        $definition = $this->bindings[$abstract] ?? new BindingDefinition($abstract);
+
+        $concrete = $definition instanceof BindingDefinition
+        ? $definition->getConcrete()
+        : $definition;
+
+        $arguments = $definition instanceof BindingDefinition
+        ? $definition->getArguments()
+        : [];
+
+        $object = is_callable($concrete)
+        ? $concrete($this, $parameters)
+        : $this->build($concrete, [ ...$arguments, ...$parameters]);
 
         $this->runAfterResolvingCallbacks($abstract, $object);
 
-        // Save singleton if registered
         if (array_key_exists($abstract, $this->instances)) {
             $this->instances[$abstract] = $object;
         }
@@ -104,7 +118,19 @@ class Container implements ContainerInterface
                     throw new Exception("Cannot resolve class dependency '{$parameter->name}'");
                 }
             } else {
-                $dependencies[] = $this->make($type->getName());
+                // $dependencies[] = $this->make($type->getName());
+                $paramType = $type->getName();
+
+                // Check contextual override first
+                if (isset($this->contextual[$concrete][$paramType])) {
+                    $implementation = $this->contextual[$concrete][$paramType];
+                    $dependencies[] = is_callable($implementation)
+                    ? $implementation($this)
+                    : $this->make($implementation);
+                } else {
+                    $dependencies[] = $this->make($paramType);
+                }
+
             }
         }
 
@@ -175,6 +201,33 @@ class Container implements ContainerInterface
             $callback($object, $this);
         }
     }
+
+    public function when(string $concrete): ContextualBindingBuilder
+    {
+        return new ContextualBindingBuilder($this, $concrete);
+    }
+
+    public function addContextualBinding(string $concrete, string $abstract, callable | string $implementation): void
+    {
+        $this->contextual[$concrete][$abstract] = $implementation;
+    }
+
+    public function registerProvider(ServiceProvider|string $provider): void
+{
+    $provider = is_string($provider) ? new $provider($this) : $provider;
+
+    if (! $provider instanceof ServiceProvider) {
+        throw new \InvalidArgumentException('Invalid service provider class.');
+    }
+
+    $provider->register();
+    $provider->boot();
 }
 
-
+public function registerProviders(array $providers): void
+{
+    foreach ($providers as $provider) {
+        $this->registerProvider($provider);
+    }
+}
+}
