@@ -1,0 +1,33 @@
+# Composer vendor
+/vendor/
+
+# PHPStorm / VSCode / other IDEs
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+
+# PHPUnit
+phpunit.xml
+phpunit.result.cache
+
+# Node (if applicable)
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Coverage / debug / compiled
+coverage/
+build/
+.DS_Store
+*.log
+
+# OS-specific
+Thumbs.db
+Desktop.ini
+
+# Other
+composer.lock
+
+# Dodo AI 
+.qodo
