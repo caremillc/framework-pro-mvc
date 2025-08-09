@@ -1,5 +1,8 @@
 <?php  declare(strict_types=1);
 
+use Careminate\Http\Responses\Response;
+use Careminate\Http\Responses\RedirectResponse;
+
 if (!function_exists('value')) {
     /**
      * Return the default value of the given value.
@@ -46,3 +49,155 @@ if (!function_exists('env')) {
     }
 }
 
+if (! function_exists('response')) {
+    /**
+     * Create a response instance.
+     *
+     * Usage examples:
+     *  - response('Hello world')
+     *  - response()->json([...])
+     *  - response()->redirect('/login')
+     *
+     * @param string|null $content
+     * @param int $status
+     * @param array $headers
+     * @return Response
+     */
+    function response(string $content = '', int $status = Response::HTTP_OK, array $headers = []): Response
+    {
+        return new Response($content, $status, $headers);
+    }
+}
+
+if (! function_exists('redirect')) {
+    /**
+     * Create a redirect response instance.
+     *
+     * Usage examples:
+     *  - redirect('/home')
+     *  - redirect('https://example.com')->setExitAfterRedirect(false)
+     *
+     * @param string $url
+     * @param int $status
+     * @return RedirectResponse
+     */
+    function redirect(string $url, int $status = Response::HTTP_FOUND,array $headers = []): RedirectResponse
+    {
+        return new RedirectResponse($url, $status,$headers);
+    }
+}
+
+if (!function_exists('debug_log')) {
+    /**
+     * Centralized debug logger or dumper.
+     *
+     * @param mixed $data
+     * @param bool $toFile  Whether to log to file instead of outputting
+     * @param string|null $label Optional label
+     * @return void
+     */
+    function debug_log(mixed $data, bool $toFile = false, ?string $label = null): void
+    {
+        if (!env('APP_DEBUG', false)) {
+            return;
+        }
+
+        $timestamp = date('Y-m-d H:i:s');
+        $labelText = $label ? "[$label] " : '';
+
+        if ($toFile) {
+            $logPath = BASE_PATH . '/storage/logs/log.log';
+            $output = $labelText . $timestamp . ' - ' . var_export($data, true) . PHP_EOL;
+            file_put_contents($logPath, $output, FILE_APPEND);
+        } else {
+            echo "<pre style='background:#f5f5f5;padding:10px;border:1px solid #ccc;color:#333'>";
+            echo $labelText . $timestamp . "\n";
+            print_r($data);
+            echo "</pre>";
+        }
+    }
+}
+
+if (!function_exists('stream_json')) {
+    function stream_json(iterable $data): Response
+    {
+        return Response::streamJson($data);
+    }
+}
+
+if (!function_exists('json_serializer')) {
+    function json_serializer(callable $serializer): void
+    {
+        Response::setJsonSerializer($serializer);
+    }
+}
+
+if (!function_exists('abort')) {
+    function abort(int $code, string $message = '', array $headers = []): never
+    {
+        $response = response($message, $code, $headers);
+        $response->send();
+        exit;
+    }
+}
+
+if (!function_exists('logger')) {
+    function logger(string $message, array $context = [], string $level = 'info'): void
+    {
+        $logPath = BASE_PATH . '/storage/logs/log.log';
+        $timestamp = date('Y-m-d H:i:s');
+        $level = strtoupper($level);
+        
+        $logMessage = sprintf(
+            "[%s] %s: %s %s%s",
+            $timestamp,
+            $level,
+            $message,
+            json_encode($context),
+            PHP_EOL
+        );
+        
+        file_put_contents($logPath, $logMessage, FILE_APPEND);
+    }
+}
+
+if (! function_exists('storage_path')) {
+   function storage_path(string $path = ''): string
+    {
+        return BASE_PATH . '/storage' . ($path ? '/' . ltrim($path, '/') : '');
+    }
+}
+
+if (!function_exists('base_path')) {
+    function base_path(?string $file = null): string
+    {
+        return rtrim(ROOT_PATH . '/../' . ($file ?? ''), '/');
+    }
+}
+
+
+if (! function_exists('route_path')) {
+    function route_path(?string $file = null): string
+    {
+        return ! is_null($file)
+            ? config('route.path') . DIRECTORY_SEPARATOR . $file
+            : config('route.path');
+    }
+}
+
+if (! function_exists('config')) {
+    function config(string $key, mixed $default = null): mixed
+    {
+        static $configs = [];
+
+        $parts = explode('.', $key);
+        $file = array_shift($parts);
+
+        if (!isset($configs[$file])) {
+            $path = base_path("config/{$file}.php");
+            $configs[$file] = file_exists($path) ? require $path : [];
+        }
+
+        return \Careminate\Support\Arr::get($configs[$file], implode('.', $parts), $default);
+    }
+}
