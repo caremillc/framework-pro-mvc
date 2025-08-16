@@ -108,6 +108,7 @@ class Response implements ResponseInterface
      */
     private bool $headersSent = false;
 
+
     /**
      * Response constructor.
      */
@@ -169,6 +170,13 @@ class Response implements ResponseInterface
         }
     }
 
+    //  protected function sendHeaders(): void
+    // {
+    //     http_response_code($this->status);
+    //     foreach ($this->headers as $name => $value) {
+    //         header($name . ': ' . $value, true);
+    //     }
+    // }
     /**
      * Check if header exists
      */
@@ -218,6 +226,12 @@ class Response implements ResponseInterface
         return $this->headers;
     }
 
+     public function setStatus(int $status): static
+    {
+        $this->status = $status;
+        return $this;
+    }
+
     /**
      * getHeader
      *
@@ -228,6 +242,11 @@ class Response implements ResponseInterface
     {
         $name = $this->normalizeHeaderName($name);
         return $this->headers[$name] ?? null;
+    }
+    public function header(string $name, string $value): static
+    {
+        $this->headers[$name] = $value;
+        return $this;
     }
     /**
      * Set a header on the response.
@@ -253,6 +272,7 @@ class Response implements ResponseInterface
         return $this;
     }
 
+    
     /**
      * Whether headers were already sent.
      */
@@ -719,4 +739,30 @@ class Response implements ResponseInterface
         }
     }
 
+    public function redirect(string $to, int $status = 302): never
+    {
+        $this->status = $status;
+        $this->header('Location', $to);
+        $this->sendHeaders();
+        exit;
+    }
+
+     public function json(array $data, int $status = 200): never
+    {
+        $this->status = $status;
+        $this->header('Content-Type', 'application/json');
+        $this->sendHeaders();
+        echo json_encode($data);
+        exit;
+    }
+
+     public function view(string $html, int $status = 200): never
+    {
+        $this->status = $status;
+        $this->sendHeaders();
+        echo $html;
+        exit;
+    }
+
+    
 }

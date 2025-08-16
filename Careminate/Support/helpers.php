@@ -136,6 +136,22 @@ if (!function_exists('base_path')) {
     }
 }
 
+if (! function_exists('route_path')) {
+    function route_path(string $file = ''): string
+    {
+        $base = rtrim(config('route.path'), DIRECTORY_SEPARATOR);
+
+        return $base . ($file ? DIRECTORY_SEPARATOR . $file : '');
+    }
+}
+
+if (! function_exists('response')) {
+    function response(): \Careminate\Http\Responses\Response
+    {
+        return new \Careminate\Http\Responses\Response();
+    }
+}
+
 if (! function_exists('config')) {
     function config(string $key, mixed $default = null): mixed
     {
