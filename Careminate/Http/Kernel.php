@@ -2,18 +2,54 @@
 
 namespace Careminate\Http;
 
+use Careminate\Routing\Router;
 use Careminate\Http\Requests\Request;
 use Careminate\Http\Responses\Response;
 
+/**
+ * HTTP Kernel
+ * 
+ * The Kernel class serves as the central point for handling incoming HTTP requests
+ * and returning the appropriate responses by dispatching them through the router.
+ */
 class Kernel
 {
+    /**
+     * Create a new Kernel instance
+     * 
+     * @param Router $router Router instance used for dispatching requests
+     */
+    public function __construct(private Router $router) {}
+
+    /**
+     * Handle the incoming HTTP request
+     * 
+     * Dispatches the request through the router, executes the appropriate handler,
+     * and returns the resulting response. Catches any exceptions and returns them
+     * as error responses.
+     * 
+     * @param Request $request The incoming HTTP request
+     * @return Response The HTTP response
+     */
     public function handle(Request $request): Response
     {
-        $content = '<h1>Hello World from Kernel</h1>';
-        $content .= '<p>Request Path: ' . htmlspecialchars($request->getPathInfo(), ENT_QUOTES, 'UTF-8') . '</p>';
-        $content .= '<p>Request Method: ' . htmlspecialchars($request->getMethod(), ENT_QUOTES, 'UTF-8') . '</p>';
-        $content .= '<p>User Agent: ' . htmlspecialchars($request->userAgent(), ENT_QUOTES, 'UTF-8') . '</p>';
+        try {
+            [$routeHandler, $vars] = $this->router->dispatch($request);
 
-        return new Response($content, 200, ['Content-Type' => 'text/html; charset=utf-8']);
+            // Normalize route params (ensure numeric indexing for arguments)
+            $args = array_values($vars);
+
+            $response = call_user_func_array($routeHandler, $args);
+
+            // Always guarantee a Response object
+            if (! $response instanceof Response) {
+                $response = new Response((string) $response);
+            }
+
+        } catch (\Exception $exception) {
+            $response = new Response($exception->getMessage(), 400);
+        }
+
+        return $response;
     }
 }
