@@ -22,6 +22,7 @@ class Request
     public function __construct(
         private readonly array $getParams = [],
         private readonly array $postParams = [],
+        private readonly ?string $body = null,
         private readonly array $cookies = [],
         private readonly array $files = [],
         private readonly array $server = [],
@@ -35,6 +36,7 @@ class Request
     /**
      * Create Request from global variables
      */
+
     public static function createFromGlobals(): static
     {
         $method      = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
@@ -50,7 +52,16 @@ class Request
             }
         }
 
-        return new static($_GET, $_POST, $_COOKIE, $_FILES, $_SERVER, $inputParams, $rawInput);
+        return new static(
+            $_GET,
+            $_POST,
+            $rawInput,
+            $_COOKIE,
+            $_FILES,
+            $_SERVER,
+            $inputParams,
+            $rawInput
+        );
     }
 
     /**
@@ -166,6 +177,22 @@ class Request
     public function get(string $key, mixed $default = null): mixed
     {
         return Arr::get($this->all(), $key, $default);
+    }
+    /**
+     * Whether the request is an AJAX (XMLHttpRequest) request.
+     */
+    public function isAjax(): bool
+    {
+        $xrw = $this->header('X-Requested-With');
+        return $xrw !== null && strtolower($xrw) === 'xmlhttprequest';
+    }
+
+    /**
+     * Get raw body content.
+     */
+    public function getContent(): ?string
+    {
+        return $this->body;
     }
 
     public function has(string $key): bool
