@@ -1,16 +1,12 @@
 <?php declare(strict_types=1);
-
 namespace Careminate\Routing\Contracts;
 
 use Careminate\Http\Requests\Request;
+use Psr\Container\ContainerInterface;
 
 interface RouterInterface
 {
-    /**
-     * Dispatch the request to a route handler.
-     *
-     * @param Request $request
-     * @return array [$callableHandler, $routeVars]
-     */
-    public function dispatch(Request $request): array;
+    public function dispatch(Request $request, ContainerInterface $container);
+
+    public function setRoutes(array $routes): void;
 }
