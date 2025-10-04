@@ -18,6 +18,8 @@ class Request
     private ?array $cachedAll        = null;
     private array $oldInput          = [];
     private array $errors            = [];
+    protected $uri;
+    protected $baseUrl;
 
     public function __construct(
         private readonly array $getParams = [],
@@ -27,10 +29,13 @@ class Request
         private readonly array $files = [],
         private readonly array $server = [],
         public readonly array $inputParams = [],
-        public readonly string $rawInput = ''
+        public readonly string $rawInput = '',
+        
     ) {
         $this->normalizedHeaders = $this->normalizeHeaders($server);
         $this->cacheOldInput();
+        $this->uri = $_SERVER['REQUEST_URI'] ?? '/';
+        $this->baseUrl = $this->resolveBaseUrl();
     }
 
     /**
@@ -332,4 +337,61 @@ class Request
         return $this->rawInput;
     }
 
+     /**
+     * Get the current path info for the request
+     */
+    public function path(): string
+    {
+        // Remove query string
+        $path = parse_url($this->uri, PHP_URL_PATH) ?: '/';
+        
+        // Remove base URL if present (for subdirectory installations)
+        if ($this->baseUrl && strpos($path, $this->baseUrl) === 0) {
+            $path = substr($path, strlen($this->baseUrl));
+        }
+        
+        // Sanitize and return
+        $path = trim($path, '/');
+        
+        return $path === '' ? '/' : $path;
+    }
+    
+    /**
+     * Get path segments as array
+     */
+    public function segments(): array
+    {
+        $path = $this->path();
+        return $path === '/' ? [] : explode('/', trim($path, '/'));
+    }
+    
+    /**
+     * Get specific path segment
+     */
+    public function segment(int $index): ?string
+    {
+        $segments = $this->segments();
+        return $segments[$index - 1] ?? null;
+    }
+    
+    /**
+     * Resolve base URL for applications in subdirectories
+     */
+    protected function resolveBaseUrl(): string
+    {
+        $scriptName = $_SERVER['SCRIPT_NAME'] ?? '';
+        $baseUrl = dirname($scriptName);
+        
+        return $baseUrl === '/' ? '' : $baseUrl;
+    }
+    
+    /**
+     * Get full URI with query string
+     */
+    public function fullUri(): string
+    {
+        return $this->uri;
+    }
+    
+  
 }

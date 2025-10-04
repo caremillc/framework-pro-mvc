@@ -3,6 +3,7 @@
 use Careminate\Support\Collection;
 use Careminate\Http\Requests\Request;
 use Careminate\Http\Responses\Response;
+use Careminate\View\Factories\ViewFactory;
 use Careminate\Http\Responses\RedirectResponse;
 
 /**
@@ -19,6 +20,7 @@ if (!function_exists('value')) {
         return $value instanceof \Closure ? $value() : $value;
     }
 }
+
 if (!function_exists('request')) {
     /**
      * Get the current Request instance or a specific input value.
@@ -274,6 +276,7 @@ if (! function_exists('public_path')) {
         return base_path('public' . ($file ? '/' . $file : ''));
     }
 }
+
 if (!function_exists('asset')) {
     /**
      * Generate a full URL for an asset in the public directory
@@ -306,6 +309,14 @@ if (!function_exists('asset')) {
         // }
 
         return $url;
+    }
+}
+
+if (!function_exists('url')) {
+    function url(string $path = ''): string
+    {
+        $baseUrl = env('APP_URL', '');
+        return rtrim($baseUrl, '/') . '/' . ltrim($path, '/');
     }
 }
 
@@ -467,6 +478,12 @@ if (!function_exists('back')) {
 }
 
 
+if (!function_exists('redirect')) {
+    function redirect(string $url, int $status = 302): Response
+    {
+        return new Response('', $status, ['Location' => $url]);
+    }
+}
 /**
  * End
  * Response and ResponseRedirection
@@ -486,25 +503,22 @@ if (!function_exists('back')) {
  *
  * @return Response
  */
-if (!function_exists('view')) {
-    function view(string $template, array $parameters = [], ?Response $response = null): Response
+
+if (!function_exists('container')) {
+    function container(): mixed
     {
-        // Resolve the container (already bootstrapped in config/container.php)
-        static $container;
+        global $container;
+        return $container;
+    }
+}
 
-        if ($container === null) {
-            $container = require BASE_PATH . '/config/container.php';
-        }
-
-        /** @var \Twig\Environment $twig */
-        $twig = $container->get('twig');
-
-        $content = $twig->render($template, $parameters);
-
-        $response ??= new Response();
-        $response->setContent($content);
-
-        return $response;
+if (!function_exists('view')) {
+    function view(string $view, array $data = [], ?string $engine = null): Response
+    {
+        $factory = container()->get(ViewFactory::class);
+        $content = $factory->make($view, $data, $engine);
+        
+        return new Response($content);
     }
 }
 
@@ -513,3 +527,5 @@ if (!function_exists('view')) {
  * End View Class
  * ================================ 
  * */
+
+
