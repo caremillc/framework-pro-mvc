@@ -3,6 +3,7 @@
 namespace Careminate\Http;
 
 use Careminate\Routing\Router;
+use Careminate\Session\Session;
 use Careminate\Http\Requests\Request;
 use Psr\Container\ContainerInterface;
 use Careminate\Http\Responses\Response;
@@ -75,6 +76,9 @@ class Kernel
             $response = $this->createExceptionResponse($exception);
         }
 
+           // After sending response, clean up flash data
+        $this->terminate($request, $response);
+        
         return $response;
     }
 
@@ -96,4 +100,12 @@ class Kernel
 		return new Response('Server error', Response::HTTP_INTERNAL_SERVER_ERROR);
 	}
     
+     public function terminate(Request $request, Response $response): void
+    {
+        /** @var Session $session */
+        $session = $this->container->get(Session::class);
+
+        // Remove any "old" flashes after response
+        $session->clearFlashes();
+    }
 }

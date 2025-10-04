@@ -471,3 +471,45 @@ if (!function_exists('back')) {
  * End
  * Response and ResponseRedirection
  */
+
+/**
+ * ================================
+ * Start View Class
+ * ================================ 
+ * */
+/**
+ * Render a Twig view and return a Response instance.
+ *
+ * @param string $template   The Twig template path (e.g. "home.html.twig")
+ * @param array  $parameters Parameters to pass into the template
+ * @param Response|null $response Optional Response object
+ *
+ * @return Response
+ */
+if (!function_exists('view')) {
+    function view(string $template, array $parameters = [], ?Response $response = null): Response
+    {
+        // Resolve the container (already bootstrapped in config/container.php)
+        static $container;
+
+        if ($container === null) {
+            $container = require BASE_PATH . '/config/container.php';
+        }
+
+        /** @var \Twig\Environment $twig */
+        $twig = $container->get('twig');
+
+        $content = $twig->render($template, $parameters);
+
+        $response ??= new Response();
+        $response->setContent($content);
+
+        return $response;
+    }
+}
+
+/**
+ * ================================
+ * End View Class
+ * ================================ 
+ * */
