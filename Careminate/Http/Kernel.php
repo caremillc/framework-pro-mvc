@@ -2,18 +2,21 @@
 
 namespace Careminate\Http;
 
+use ReflectionMethod;
+use ReflectionFunction;
+use ReflectionNamedType;
 use Careminate\Routing\Router;
 use Careminate\Http\Requests\Request;
+use Psr\Container\ContainerInterface;
 use Careminate\Http\Responses\Response;
-use ReflectionFunction;
-use ReflectionMethod;
-use ReflectionNamedType;
+use Careminate\Routing\Contracts\RouterInterface;
 
 class Kernel
 {
-    public function __construct(private Router $router)
-    {
-    }
+    public function __construct(
+        private RouterInterface $router,
+        private ContainerInterface $container
+    ){}
 
     /**
      * Handle an incoming HTTP request and return a Response.
@@ -22,7 +25,8 @@ class Kernel
     {
         try {
             // Get the route handler and route variables
-            [$handler, $vars] = $this->router->dispatch($request);
+            // [$handler, $vars] = $this->router->dispatch($request);
+            [$handler, $vars] = $this->router->dispatch($request, $this->container);  //$this->container
 
             if (!is_callable($handler)) {
                 // If it's a controller array or class string, convert to callable
