@@ -10,15 +10,13 @@ use Careminate\Http\Responses\RedirectResponse;
  * Start Request Class
  * ================================ 
  * */
-if (!function_exists('value')) {
-    /**
-     * Return the default value of a variable or call it if Closure
-     */
-    function value(mixed $value): mixed
+if (! function_exists('value')) {
+    function value(mixed $value, ...$args): mixed
     {
-        return $value instanceof \Closure ? $value() : $value;
+        return is_callable($value) ? $value(...$args) : $value;
     }
 }
+
 if (!function_exists('request')) {
     /**
      * Get the current Request instance or a specific input value.
@@ -275,6 +273,41 @@ if (! function_exists('public_path')) {
     }
 }
 
+if (!function_exists('asset')) {
+    /**
+     * Generate a full URL for an asset in the public directory
+     *
+     * @param string $path  Path relative to public/, e.g. "css/app.css"
+     * @param bool $secure  Force HTTPS
+     * @param bool $version Add version query string from config('app.version')
+     * @return string
+     */
+    function asset(string $path, bool $secure = false, bool $version = true): string
+    {
+        // Get base URL from config or env
+        $base = rtrim(config('app.asset_url') ?? config('app.url'), '/');
+
+        // Force https if requested
+        if ($secure) {
+            $base = preg_replace('#^http:#', 'https:', $base);
+        }
+
+        // Clean up path
+        $path = ltrim($path, '/');
+
+        $url = "{$base}/{$path}";
+
+        // Append version if requested
+        // if ($version) {
+        //     $ver = config('app.version', time());
+        //     $delimiter = strpos($url, '?') === false ? '?' : '&';
+        //     $url .= "{$delimiter}v={$ver}";
+        // }
+
+        return $url;
+    }
+}
+
 if (!function_exists('base_path')) {
     function base_path(string $path = ''): string
     {
@@ -335,6 +368,7 @@ if (!function_exists('config')) {
         return array_get($config, $key, $default);
     }
 }
+
 
 if (!function_exists('array_get')) {
     function array_get(array $array, string $key, $default = null)
