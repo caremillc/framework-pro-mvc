@@ -436,3 +436,139 @@ if (!function_exists('back')) {
  * End
  * Response and ResponseRedirection
  */
+
+
+// if (!function_exists('config')) {
+//     function config(string $key, $default = null) {
+//         return Config::get($key, $default);
+//     }
+// }
+
+if (!function_exists('env')) {
+    function env(string $key, $default = null) {
+        return $_ENV[$key] ?? $default;
+    }
+}
+
+if (!function_exists('app')) {
+    function app(?string $key = null) {
+        global $app;
+        return $key ? $app->make($key) : $app;
+    }
+}
+
+if (!function_exists('route')) {
+    function route(string $name, array $params = []): ?string {
+        global $kernel;
+        if (isset($kernel) && method_exists($kernel, 'router')) {
+            return $kernel->router()->routeUrl($name, $params);
+        }
+        return null;
+    }
+}
+
+// if (!function_exists('route')) {
+//     /**
+//      * Generate a URL from a named route.
+//      *
+//      * @param string $name   The name of the route
+//      * @param array  $params Parameters to replace {placeholders} or append as query
+//      * @return string
+//      */
+//     function route(string $name, array $params = []): string
+//     {
+//         global $kernel;
+
+//         if (!isset($kernel) || !method_exists($kernel, 'router')) {
+//             return '/'; // Fallback if kernel is not initialized
+//         }
+
+//         $router = $kernel->router();
+
+//         // Separate query params from route placeholders
+//         $routeParams = [];
+//         $queryParams = [];
+
+//         foreach ($params as $key => $value) {
+//             // Placeholder keys look like {id} in the URI pattern
+//             if (strpos($router->routeUrl($name, [$key => $value]), '{') === false) {
+//                 $routeParams[$key] = $value;
+//             } else {
+//                 $queryParams[$key] = $value;
+//             }
+//         }
+
+//         $url = $router->routeUrl($name, $routeParams);
+
+//         if (!$url) {
+//             return '/'; // fallback if route name not found
+//         }
+
+//         // Append query string if provided
+//         if (!empty($queryParams)) {
+//             $url .= '?' . http_build_query($queryParams);
+//         }
+
+//         return $url;
+//     }
+// }
+
+
+/**
+ * View 
+ */
+// if (!function_exists('base_path')) {
+//     function base_path(string $path = ''): string
+//     {
+//         return rtrim(BASE_PATH . '/' . ltrim($path, '/'), '/');
+//     }
+// }
+
+if (!function_exists('view_path')) {
+    function view_path(string $path = ''): string
+    {
+        return base_path('resources/views/' . ltrim($path, '/'));
+    }
+}
+
+// if (!function_exists('view')) {
+//     function view(string $template, array $data = []): string
+//     {
+//         global $kernel;
+
+//         if (!isset($kernel)) {
+//             throw new \RuntimeException("View engine not initialized.");
+//         }
+
+//         $engine = $kernel->viewEngine();
+//         return $engine->render($template, $data);
+//     }
+// }
+// if (!function_exists('view')) {
+//     function view(string $name, array $data = []): string
+//     {
+//         global $kernel;
+
+//         if (isset($kernel) && method_exists($kernel, 'view')) {
+//             return $kernel->view()->render($name, $data);
+//         }
+
+//         throw new RuntimeException('View system not initialized.');
+//     }
+// }
+
+if (!function_exists('view')) {
+    function view(string $name, array $data = []): string
+    {
+        global $kernel;
+
+        if (!isset($kernel)) {
+            throw new \RuntimeException("Kernel not initialized for view rendering.");
+        }
+
+        return $kernel->view()->render($name, $data);
+    }
+}
+/**
+ * End View
+ */
