@@ -334,10 +334,17 @@ if (! function_exists('resource_path')) {
     }
 }
 
+// if (!function_exists('route_path')) {
+//     function route_path(string $path = ''): string
+//     {
+//         return base_path('routes' . ($path ? DIRECTORY_SEPARATOR . $path : $path));
+//     }
+// }
+
 if (!function_exists('route_path')) {
-    function route_path(string $path = ''): string
+    function route_path(?string $file = null)
     {
-        return base_path('routes' . ($path ? DIRECTORY_SEPARATOR . $path : $path));
+        return !is_null($file) ? config('route.path') . '/' . $file : config('route.path');
     }
 }
 
