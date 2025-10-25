@@ -1,34 +1,48 @@
 <?php declare (strict_types = 1);
 namespace Careminate\Routing;
 
-use Careminate\Exceptions\HttpException;
-use Careminate\Exceptions\HttpRequestMethodException;
-use Careminate\Http\Requests\Request;
 use FastRoute\Dispatcher;
 use FastRoute\RouteCollector;
+use Careminate\Http\Requests\Request;
+use Psr\Container\ContainerInterface;
+use Careminate\Exceptions\HttpException;
 use function FastRoute\simpleDispatcher;
+use Careminate\Exceptions\HttpRequestMethodException;
 
 class Router implements RouterInterface
 {
-    public function dispatch(Request $request): array
+     private array $routes;
+    
+    public function setRoutes(array $routes): void
     {
-        $routeInfo = $this->extractRouteInfo($request);
-
-        // If routeInfo is null (e.g., for favicon or similar), short-circuit gracefully
-        if ($routeInfo === null) {
-            return [[fn() => new \Careminate\Http\Responses\Response('', 204), '__invoke'], []];
-        }
-
-        [$handler, $vars] = $routeInfo;
-
-        if (! is_array($handler) || ! is_string($handler[0]) || ! is_string($handler[1])) {
-            throw new \InvalidArgumentException('Invalid route handler definition.');
-        }
-
-        [$controller, $method] = $handler;
-
-        return [[new $controller, $method], $vars];
+        //$routes is parsed from setRoutes in $container
+        $this->routes = $routes;
     }
+
+   public function dispatch(Request $request, ContainerInterface $container): array
+	{
+		$routeInfo = $this->extractRouteInfo($request);
+
+		if ($routeInfo === null) {
+			return [fn() => new \Careminate\Http\Responses\Response('', 204), []];
+		}
+
+		[$handler, $vars] = $routeInfo;
+
+		if (is_callable($handler)) {
+			return [$handler, $vars];
+		}
+
+		if (! is_array($handler) || ! is_string($handler[0]) || ! is_string($handler[1])) {
+			throw new \InvalidArgumentException('Invalid route handler definition.');
+		}
+
+		[$controllerId, $method] = $handler;
+		$controller = $container->get($controllerId);
+
+		return [[$controller, $method], $vars];
+	}
+
 
     private function extractRouteInfo(Request $request): array | null
     {
@@ -39,8 +53,8 @@ class Router implements RouterInterface
         }
 
         $dispatcher = simpleDispatcher(function (RouteCollector $routeCollector) {
-            $routes = require_once route_path('web.php');
-            foreach ($routes as $route) {
+            // $routes = require_once route_path('web.php');
+            foreach ($this->routes as $route) {
                 $routeCollector->addRoute(...$route);
             }
         });

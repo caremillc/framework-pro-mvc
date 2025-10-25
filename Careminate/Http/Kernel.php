@@ -2,9 +2,10 @@
 
 namespace Careminate\Http;
 
-use Careminate\Routing\Router;
 use Careminate\Http\Requests\Request;
+use Psr\Container\ContainerInterface;
 use Careminate\Http\Responses\Response;
+use Careminate\Routing\RouterInterface;
 use Careminate\Exceptions\HttpException;
 
 /**
@@ -20,9 +21,11 @@ class Kernel
      * 
      * @param Router $router Router instance used for dispatching requests
      */
-    public function __construct(private Router $router)
-    {
-    }
+    // public function __construct(private Router $router) {}
+     public function __construct(
+        private RouterInterface $router,
+        private ContainerInterface $container
+    ){}
 
     /**
      * Handle the incoming HTTP request
@@ -38,7 +41,8 @@ class Kernel
     {
         try {
 
-            [$routeHandler, $vars] = $this->router->dispatch($request);
+            [$routeHandler, $vars] = $this->router->dispatch($request, $this->container);  //$this->container
+
 
             $response = call_user_func_array($routeHandler, $vars);
 
@@ -52,3 +56,4 @@ class Kernel
     }
 
 }
+
