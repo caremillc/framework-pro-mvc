@@ -6,7 +6,7 @@ use Careminate\Http\Responses\Response;
 use Careminate\Http\Responses\RedirectResponse;
 
 // Just include the file at the top of your script
-require_once 'debug_functions.php';
+// require_once 'debug_functions.php';
 
 /**
  * ================================
@@ -465,5 +465,37 @@ if (!function_exists('back')) {
 /**
  * ================================
  * End Response  and ResponseRedirection Classes
+ * ================================ 
+ * */
+
+/**
+ * ================================
+ * Start Templates
+ * ================================ 
+ * */
+
+if (!function_exists('view')) {
+    function view(string $template, array $parameters = [], ?Response $response = null): Response
+    {
+        // Access the global container
+        global $container;
+
+        // Make sure the container is set
+        if (!isset($container)) {
+            throw new RuntimeException('Container is not set.');
+        }
+
+        $content = $container->get('twig')->render($template, $parameters);
+
+        $response ??= new Response();
+        $response->setContent($content);
+
+        return $response;
+    }
+}
+
+/**
+ * ================================
+ * End Templates
  * ================================ 
  * */
