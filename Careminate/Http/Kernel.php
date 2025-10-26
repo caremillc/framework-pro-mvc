@@ -2,11 +2,12 @@
 
 namespace Careminate\Http;
 
-use Careminate\Exceptions\HttpException;
+use Doctrine\DBAL\Connection;
 use Careminate\Http\Requests\Request;
+use Psr\Container\ContainerInterface;
 use Careminate\Http\Responses\Response;
 use Careminate\Routing\RouterInterface;
-use Psr\Container\ContainerInterface;
+use Careminate\Exceptions\HttpException;
 
 /**
  * HTTP Kernel
@@ -56,6 +57,8 @@ class Kernel
     {
         try {
 
+            //  dd($this->container->get(Connection::class));
+             
             [$routeHandler, $vars] = $this->router->dispatch($request, $this->container); //$this->container
 
             // Validate that the routeHandler is actually callable

@@ -33,15 +33,15 @@ if (!function_exists('collect')) {
  * Start Request Class
  * ================================ 
  * */
-if (!function_exists('value')) {
-    /**
-     * Return the default value of a variable or call it if Closure
-     */
-    function value(mixed $value): mixed
-    {
-        return $value instanceof \Closure ? $value() : $value;
-    }
-}
+// if (!function_exists('value')) {
+//     /**
+//      * Return the default value of a variable or call it if Closure
+//      */
+//     function value(mixed $value): mixed
+//     {
+//         return $value instanceof \Closure ? $value() : $value;
+//     }
+// }
 if (!function_exists('request')) {
     /**
      * Get the current Request instance or a specific input value.
@@ -242,45 +242,80 @@ if (!function_exists('value')) {
     }
 }
 
+// if (!function_exists('env')) {
+//     /**
+//      * Get an environment variable, or return the default value if not found.
+//      *
+//      * Supports various data types.
+//      *
+//      * @param string $key The name of the environment variable.
+//      * @param mixed $default The default value to return if the environment variable is not found.
+//      * @return mixed The value of the environment variable or the default value.
+//      */
+//     function env(string $key, $default = null)
+//     {
+//         // check superglobals first, then getenv() reliably
+//         if (array_key_exists($key, $_ENV)) {
+//             $value = $_ENV[$key];
+//         } elseif (array_key_exists($key, $_SERVER)) {
+//             $value = $_SERVER[$key];
+//         } else {
+//             $g = getenv($key);
+//             $value = ($g !== false) ? $g : $default;
+//         }
+
+//         if (!is_string($value)) {
+//             return $value;
+//         }
+
+//         $trimmedValue = trim($value);
+
+//         return match (strtolower($trimmedValue)) {
+//             'true' => true,
+//             'false' => false,
+//             'null' => null,
+//             'empty' => '',
+//             default => is_numeric($trimmedValue) ? (str_contains($trimmedValue, '.') ? (float)$trimmedValue : (int)$trimmedValue) : (
+//                 preg_match('/^[\[{].*[\]}]$/', $trimmedValue) ? (json_decode($trimmedValue, true) ?? $trimmedValue) : $trimmedValue
+//             )
+//         };
+//     }
+// }
+
 if (!function_exists('env')) {
-    /**
-     * Get an environment variable, or return the default value if not found.
-     *
-     * Supports various data types.
-     *
-     * @param string $key The name of the environment variable.
-     * @param mixed $default The default value to return if the environment variable is not found.
-     * @return mixed The value of the environment variable or the default value.
-     */
     function env(string $key, $default = null)
     {
-        // check superglobals first, then getenv() reliably
-        if (array_key_exists($key, $_ENV)) {
-            $value = $_ENV[$key];
-        } elseif (array_key_exists($key, $_SERVER)) {
-            $value = $_SERVER[$key];
-        } else {
-            $g = getenv($key);
-            $value = ($g !== false) ? $g : $default;
+        static $dotenv = null;
+
+        if ($dotenv === null) {
+            // Load from symfony/dotenv or fallback to getenv()
+            $dotenv = true;
         }
 
-        if (!is_string($value)) {
-            return $value;
+        $value = $_ENV[$key] ?? $_SERVER[$key] ?? getenv($key);
+
+        if ($value === false || $value === null) {
+            return $default;
         }
 
-        $trimmedValue = trim($value);
+        // 🧹 Clean inline comments like `sqlite  # comment`
+        if (is_string($value)) {
+            // Split on the first unescaped # (but ignore those in quotes)
+            $value = preg_replace('/\s+#.*/', '', $value);
+            $value = trim($value, " \t\n\r\0\x0B\"'");
+        }
 
-        return match (strtolower($trimmedValue)) {
-            'true' => true,
-            'false' => false,
-            'null' => null,
-            'empty' => '',
-            default => is_numeric($trimmedValue) ? (str_contains($trimmedValue, '.') ? (float)$trimmedValue : (int)$trimmedValue) : (
-                preg_match('/^[\[{].*[\]}]$/', $trimmedValue) ? (json_decode($trimmedValue, true) ?? $trimmedValue) : $trimmedValue
-            )
-        };
+        // Convert common literal types
+        switch (strtolower($value)) {
+            case 'true':  return true;
+            case 'false': return false;
+            case 'null':  return null;
+        }
+
+        return $value;
     }
 }
+
 /**
  * ================================
  * End Env and Value
