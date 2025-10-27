@@ -1,5 +1,4 @@
 <?php declare(strict_types=1);
-
 namespace Careminate\Http\Responses;
 
 class RedirectResponse extends Response

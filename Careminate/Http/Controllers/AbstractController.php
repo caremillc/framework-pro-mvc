@@ -1,14 +1,20 @@
 <?php declare(strict_types=1);
 namespace Careminate\Http\Controllers;
 
+use Careminate\Http\Requests\Request;
 use Psr\Container\ContainerInterface;
 use Careminate\Http\Responses\Response;
 
 abstract class AbstractController
 {
     protected ?ContainerInterface $container = null;
-
+    protected Request $request;
   
+    public function setRequest(Request $request): void
+    {
+        $this->request = $request;
+    }
+    
     public function setContainer(ContainerInterface $container): void
     {
         // Store the container instance for use within the controller.
