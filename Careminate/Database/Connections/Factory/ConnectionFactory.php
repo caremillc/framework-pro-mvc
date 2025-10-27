@@ -6,11 +6,11 @@ use Doctrine\DBAL\DriverManager;
 
 class ConnectionFactory
 {
-    protected array $config;
+    protected array $dbConfig;
 
-    public function __construct(array $config)
+    public function __construct(array $dbConfig)
     {
-        $this->config = $config;
+        $this->dbConfig = $dbConfig;
     }
 
     public function create(?string $name = null): Connection
@@ -22,8 +22,8 @@ class ConnectionFactory
         }
 
         // 2. Otherwise, use driver-based config
-        $name = $name ?: $this->config['default'];
-        $connectionConfig = $this->config['connections'][$name] ?? null;
+        $name = $name ?: $this->dbConfig['default'];
+        $connectionConfig = $this->dbConfig['connections'][$name] ?? null;
 
         if (!$connectionConfig) {
             throw new \InvalidArgumentException("Database connection [{$name}] not configured.");
