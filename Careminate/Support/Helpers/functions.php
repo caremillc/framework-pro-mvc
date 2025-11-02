@@ -4,6 +4,7 @@ use Careminate\Support\Collection;
 use Careminate\Http\Requests\Request;
 use Careminate\Http\Responses\Response;
 use Careminate\Http\Responses\RedirectResponse;
+use Careminate\Database\Connections\Factory\DatabaseConnectionFactory;
 
 // Just include the file at the top of your script
 // require_once 'debug_functions.php';
@@ -629,6 +630,19 @@ if (!function_exists('url')) {
     }
 }
 
+if (!function_exists('db')) {
+    function db(): PDO
+    {
+        return DatabaseConnectionFactory::make()->getPDO();
+    }
+}
+
+if (!function_exists('dbal')) {
+    function dbal(): \Doctrine\DBAL\Connection
+    {
+        return DatabaseConnectionFactory::makeDBAL();
+    }
+}
 /**
  * ================================
  * End Templates

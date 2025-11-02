@@ -62,7 +62,7 @@ class Kernel
     {
         try {
 
-            //  dd($this->container->get(Connection::class));
+            // dd($this->container->get(Connection::class));
             // passing the request into the middleware handler
              $response = $this->requestHandler->handle($request);
              
