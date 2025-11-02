@@ -446,13 +446,31 @@ if (!function_exists('json')) {
     }
 }
 
+// if (!function_exists('redirect')) {
+//     /**
+//      * Create a redirect response.
+//      */
+//     function redirect(string $url, int $status = RedirectResponse::HTTP_FOUND): RedirectResponse
+//     {
+//         return new RedirectResponse($url, $status);
+//     }
+// }
+
 if (!function_exists('redirect')) {
     /**
-     * Create a redirect response.
+     * Helper function to generate a redirect response.
+     *
+     * @param string $url The URL to redirect to.
+     * @param int $status The HTTP status code (default is 302).
+     * @param array $headers Any additional headers for the redirect.
+     * @return Response The redirect response.
      */
-    function redirect(string $url, int $status = RedirectResponse::HTTP_FOUND): RedirectResponse
+    function redirect(string $url, int $status = 302, array $headers = []): Response
     {
-        return new RedirectResponse($url, $status);
+        // Create a new redirect response using the provided parameters
+        $headers['Location'] = $url;
+
+        return new Response('', $status, $headers);
     }
 }
 
@@ -509,23 +527,105 @@ if (!function_exists('back')) {
  * ================================ 
  * */
 
+// if (!function_exists('view')) {
+//     function view(string $template, array $parameters = [], ?Response $response = null): Response
+//     {
+//         // Access the global container
+//         global $container;
+
+//         // Make sure the container is set
+//         if (!isset($container)) {
+//             throw new RuntimeException('Container is not set.');
+//         }
+
+//         $content = $container->get('twig')->render($template, $parameters);
+
+//         $response ??= new Response();
+//         $response->setContent($content);
+
+//         return $response;
+//     }
+// }
 if (!function_exists('view')) {
     function view(string $template, array $parameters = [], ?Response $response = null): Response
     {
-        // Access the global container
         global $container;
 
-        // Make sure the container is set
         if (!isset($container)) {
             throw new RuntimeException('Container is not set.');
         }
 
-        $content = $container->get('twig')->render($template, $parameters);
+        // Convert dots to slashes and add .twig
+        $templatePath = str_replace('.', '/', $template) . '.html.twig';
+
+        $content = $container->get('twig')->render($templatePath, $parameters);
 
         $response ??= new Response();
         $response->setContent($content);
 
         return $response;
+    }
+}
+
+
+// if (!function_exists('asset')) {
+//     /**
+//      * Generate a URL for an asset in the public directory.
+//      *
+//      * @param  string  $path
+//      * @return string
+//      */
+//     function asset(string $path): string
+//     {
+//         // Fallback to 'http' if REQUEST_SCHEME is not set
+//         $scheme = $_SERVER['REQUEST_SCHEME'] ?? 'http';
+
+//         // Support built-in PHP server (host:port)
+//         $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+
+//         return rtrim($scheme . '://' . $host, '/') . '/' . ltrim($path, '/');
+//     }
+// }
+
+
+if (!function_exists('asset')) {
+    /**
+     * Generate a URL for an asset in the public folder.
+     *
+     * @param string $path Relative path from the public folder
+     * @return string Full URL
+     */
+    function asset(string $path): string
+    {
+        // Base URL (adjust to your project)
+        $baseUrl = 'http://localhost/caremi-pro-mvc/public/';
+
+        // Remove leading slashes
+        $path = ltrim($path, '/');
+
+        return $baseUrl . $path;
+    }
+}
+
+
+// if (!function_exists('url')) {
+//     function url($path = '') {
+//         return rtrim($_ENV['APP_URL'], '/') . '/' . ltrim($path, '/');
+//     }
+// }
+
+if (!function_exists('url')) {
+    function url(string $path = ''): string
+    {
+        $baseUrl = rtrim($_ENV['APP_URL'] ?? '', '/');
+
+        if (!$baseUrl) {
+            $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+            $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+            $baseUrl = $scheme . '://' . $host;
+        }
+
+        return $baseUrl . '/' . ltrim($path, '/');
     }
 }
 

@@ -3,6 +3,7 @@
 namespace Careminate\Http\Requests;
 
 use Careminate\Support\Arr;
+use Careminate\Session\SessionInterface;
 
 /**
  * ================================
@@ -10,7 +11,10 @@ use Careminate\Support\Arr;
  * ================================
  */
 class Request
-{
+{ 
+    private SessionInterface $session;
+    private mixed $routeHandler;
+    private array $routeHandlerArgs;
     /**
      * HTTP methods that can contain request body data
      */
@@ -517,4 +521,48 @@ public function getHeaders(): array
         return Arr::except($this->all(), is_string($keys) ? func_get_args() : $keys);
     }
 
+    public function files(?string $key = null)
+{
+    if ($key === null) {
+        return $_FILES;
+    }
+    return $_FILES[$key] ?? null;
+}
+    // start sessions
+   public function getSession(): SessionInterface
+    {
+        return $this->session;
+    }
+
+    public function setSession(SessionInterface $session): void
+    {
+        $this->session = $session;
+    }
+
+     public function hasSession(): bool
+    {
+        return $this->session !== null;
+    }
+
+    //end sessions
+
+    public function getRouteHandler(): mixed
+    {
+        return $this->routeHandler;
+    }
+
+    public function setRouteHandler(mixed $routeHandler): void
+    {
+        $this->routeHandler = $routeHandler;
+    }
+
+    public function getRouteHandlerArgs(): array
+    {
+        return $this->routeHandlerArgs;
+    }
+
+    public function setRouteHandlerArgs(array $routeHandlerArgs): void
+    {
+        $this->routeHandlerArgs = $routeHandlerArgs;
+    }
 }

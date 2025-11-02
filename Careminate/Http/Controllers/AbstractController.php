@@ -22,18 +22,30 @@ abstract class AbstractController
     }
 
    
+   /**
+     * Render a Twig template using dot notation.
+     *
+     * @param string $template  Template name in dot notation, e.g., "posts.index"
+     * @param array $parameters Parameters to pass to the template
+     * @param Response|null $response Optional response object
+     * @return Response
+     */
     public function render(string $template, array $parameters = [], ?Response $response = null): Response
     {
-        // Render the template using the Twig service from the container.
-        $content = $this->container->get('twig')->render($template, $parameters);
+        if (!$this->container) {
+            throw new \RuntimeException('Container is not set.');
+        }
 
-        // If no response object is passed, create a new one.
+        // Convert dot notation to slash notation
+        $templatePath = str_replace('.', '/', $template) . '.html.twig';
+
+        // Render the template using Twig
+        $content = $this->container->get('twig')->render($templatePath, $parameters);
+
+        // Use existing response or create new
         $response ??= new Response();
-
-        // Set the rendered content as the response body.
         $response->setContent($content);
 
-        // Return the response object with the rendered content.
         return $response;
     }
 }

@@ -3,37 +3,16 @@ namespace Careminate\Database\Connections\Factory;
 
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\DriverManager;
+use Careminate\Database\Connections\Contracts\ConnectionInterface;
 
-class ConnectionFactory
+class ConnectionFactory implements ConnectionInterface
 {
-    protected array $dbConfig;
-
-    public function __construct(array $dbConfig)
+    public function __construct(private array $config)
     {
-        $this->dbConfig = $dbConfig;
     }
 
-    public function create(?string $name = null): Connection
+    public function create(): Connection
     {
-        // 1. If DATABASE_URL exists, prioritize it
-        $databaseUrl = env('DATABASE_URL', null);
-        if (!empty($databaseUrl)) {
-            return DriverManager::getConnection(['url' => $databaseUrl]);
-        }
-
-        // 2. Otherwise, use driver-based config
-        $name = $name ?: $this->dbConfig['default'];
-        $connectionConfig = $this->dbConfig['connections'][$name] ?? null;
-
-        if (!$connectionConfig) {
-            throw new \InvalidArgumentException("Database connection [{$name}] not configured.");
-        }
-
-        // 3. Doctrine accepts either a 'url' or full parameters array
-        if (!empty($connectionConfig['url'])) {
-            return DriverManager::getConnection(['url' => $connectionConfig['url']]);
-        }
-
-        return DriverManager::getConnection($connectionConfig);
+        return DriverManager::getConnection($this->config);
     }
 }

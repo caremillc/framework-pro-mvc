@@ -235,7 +235,7 @@ class Response
         $this->status = $status;
         return $this;
     }
-   
+
     /**
      * Get the HTTP status code
      */
@@ -464,7 +464,7 @@ class Response
 
     public static function download(string $filePath, ?string $fileName = null): self
     {
-        if (!file_exists($filePath)) {
+        if (! file_exists($filePath)) {
             throw new \RuntimeException("File not found: {$filePath}");
         }
 
@@ -475,10 +475,10 @@ class Response
             'Content-Type'        => mime_content_type($filePath) ?: 'application/octet-stream',
             'Content-Disposition' => "attachment; filename=\"{$fileName}\"",
             'Content-Transfer-Encoding' => 'binary',
-            'Expires'             => '0',
-            'Cache-Control'       => 'must-revalidate',
-            'Pragma'              => 'public',
-            'Content-Length'      => (string) filesize($filePath),
+            'Expires'                   => '0',
+            'Cache-Control'             => 'must-revalidate',
+            'Pragma'                    => 'public',
+            'Content-Length'            => (string) filesize($filePath),
         ];
 
         $content = file_get_contents($filePath);
@@ -486,28 +486,30 @@ class Response
         return new self($content, 200, $headers);
     }
 
-
     public static function downloadStream(string $filePath, ?string $fileName = null): void
-{
-    if (!file_exists($filePath)) {
-        http_response_code(404);
-        echo 'File not found';
-        return;
-    }
+    {
+        if (! file_exists($filePath)) {
+            http_response_code(404);
+            echo 'File not found';
+            return;
+        }
 
-    $fileName = $fileName ?? basename($filePath);
-    header('Content-Description: File Transfer');
-    header('Content-Type: ' . (mime_content_type($filePath) ?: 'application/octet-stream'));
-    header('Content-Disposition: attachment; filename="' . basename($fileName) . '"');
-    header('Content-Transfer-Encoding: binary');
-    header('Expires: 0');
-    header('Cache-Control: must-revalidate');
-    header('Pragma: public');
-    header('Content-Length: ' . filesize($filePath));
-    // flush output buffers before reading file
-    while (ob_get_level()) ob_end_clean();
-    readfile($filePath);
-    exit;
-}
+        $fileName = $fileName ?? basename($filePath);
+        header('Content-Description: File Transfer');
+        header('Content-Type: ' . (mime_content_type($filePath) ?: 'application/octet-stream'));
+        header('Content-Disposition: attachment; filename="' . basename($fileName) . '"');
+        header('Content-Transfer-Encoding: binary');
+        header('Expires: 0');
+        header('Cache-Control: must-revalidate');
+        header('Pragma: public');
+        header('Content-Length: ' . filesize($filePath));
+        // flush output buffers before reading file
+        while (ob_get_level()) {
+            ob_end_clean();
+        }
+
+        readfile($filePath);
+        exit;
+    }
 
 }
