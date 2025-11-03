@@ -64,25 +64,37 @@ class TwigFactory
     }
 
     // Method for generating the spoofed HTTP method field (e.g., PUT, DELETE)
+    // public function getMethodField($method)
+    // {
+    //     echo '<input type="hidden" name="_method" value="' . htmlspecialchars($method, ENT_QUOTES, 'UTF-8') . '">';
+    // }
+
     public function getMethodField($method)
     {
         echo '<input type="hidden" name="_method" value="' . htmlspecialchars($method, ENT_QUOTES, 'UTF-8') . '">';
     }
+    // public function getCsrfToken()
+    // {
+    //     // Retrieve the CSRF token from the session
+    //     $csrfToken = $this->session->get('csrf_token');
 
+    //     // Ensure the CSRF token is properly encoded and sanitized
+    //     echo '<input type="hidden" name="_token" value="' . htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') . '" />';
+    // }
     public function getCsrfToken()
     {
         // Retrieve the CSRF token from the session
         $csrfToken = $this->session->get('csrf_token');
-
+    
         // Ensure the CSRF token is properly encoded and sanitized
-        echo '<input type="hidden" name="_token" value="' . htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') . '" />';
+         echo '<input type="hidden" name="_token" value="' . htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') . '" />';
     }
     private function addEnvironmentVariablesToTwig(Environment $twig): void
     {
                                               // Define the configuration file path
         $configPath = config_path('app.php'); // Ensure this is correct for your app structure
-        //    dd($configPath);
-        // Ensure the config file exists and is readable
+                                              //    dd($configPath);
+                                              // Ensure the config file exists and is readable
         if (! file_exists($configPath)) {
             throw new \RuntimeException("Config file not found: {$configPath}");
         }

@@ -630,6 +630,11 @@ if (!function_exists('url')) {
     }
 }
 
+// function asset(string $path): string
+// {
+//     return $_ENV['APP_URL'] . '/' . ltrim($path, '/');
+// }
+
 if (!function_exists('db')) {
     function db(): PDO
     {

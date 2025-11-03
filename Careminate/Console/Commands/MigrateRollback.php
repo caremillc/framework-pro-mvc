@@ -5,24 +5,24 @@ namespace Careminate\Console\Commands;
 use Careminate\Database\Migrations\MigrationRunner;
 use Careminate\Console\Commands\CommandInterface;
 
-class MigrateDatabase implements CommandInterface
+class MigrateRollback implements CommandInterface
 {
-    protected string $name = 'database:migrate';
-    protected string $description = 'Run all pending database migrations';
+    protected string $name = 'database:rollback';
+    protected string $description = 'Rollback the last batch of migrations';
 
     public function execute(array $params = []): int
     {
         $path = BASE_PATH . '/database/migrations';
 
-        echo "Running migrations from: {$path}\n";
+        echo "Rolling back migrations from: {$path}\n";
 
         try {
             $runner = new MigrationRunner();
-            $runner->migrate($path);
-            echo "✅ Migrations executed successfully.\n";
+            $runner->rollback($path);
+            echo "✅ Rollback completed successfully.\n";
             return 0;
         } catch (\Throwable $e) {
-            echo "❌ Migration failed: " . $e->getMessage() . "\n";
+            echo "❌ Rollback failed: " . $e->getMessage() . "\n";
             return 1;
         }
     }

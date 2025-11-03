@@ -2,8 +2,8 @@
 
 namespace Careminate\Http\Requests;
 
-use Careminate\Support\Arr;
 use Careminate\Session\SessionInterface;
+use Careminate\Support\Arr;
 
 /**
  * ================================
@@ -11,7 +11,7 @@ use Careminate\Session\SessionInterface;
  * ================================
  */
 class Request
-{ 
+{
     private SessionInterface $session;
     private mixed $routeHandler;
     private array $routeHandlerArgs;
@@ -135,10 +135,10 @@ class Request
 //         return $this->server[$serverKey] ?? null;
 //     }
 
-public function getHeaders(): array
-{
-    return $this->headers();
-}
+    public function getHeaders(): array
+    {
+        return $this->headers();
+    }
 
     /**
      * Get all headers
@@ -283,10 +283,10 @@ public function getHeaders(): array
 //         return $this->cookies[$key] ?? $default;
 //     }
 
-    public function file(string $key): ?array
-    {
-        return $this->files[$key] ?? null;
-    }
+    // public function file(string $key): ?array
+    // {
+    //     return $this->files[$key] ?? null;
+    // }
 
     // public function hasFile(string $key): bool
     // {
@@ -294,10 +294,10 @@ public function getHeaders(): array
     //     return isset($file['tmp_name'], $file['name']) && is_uploaded_file($file['tmp_name']);
     // }
 
-    public function hasFile(string $key): bool
-    {
-        return isset($this->files[$key]['tmp_name']) && is_uploaded_file($this->files[$key]['tmp_name']);
-    }
+    // public function hasFile(string $key): bool
+    // {
+    //     return isset($this->files[$key]['tmp_name']) && is_uploaded_file($this->files[$key]['tmp_name']);
+    // }
 
     public function allFiles(): array
     {
@@ -357,15 +357,23 @@ public function getHeaders(): array
             $rulesArr = explode('|', $ruleString);
             $value    = $this->input($field);
 
+            // For file fields, use the file data instead of input
+            if ($this->hasFile($field)) {
+                $value = $this->file($field);
+            }
+
             foreach ($rulesArr as $rule) {
                 [$ruleName, $param] = $this->parseRule($rule);
                 match ($ruleName) {
-                    'required' => $value === null || $value === '' ? $errors[$field][]        = "$field is required" : null,
-                    'string'   => ! is_string($value) ? $errors[$field][]                        = "$field must be a string" : null,
-                    'numeric'  => ! is_numeric($value) ? $errors[$field][]                      = "$field must be numeric" : null,
-                    'email'    => ! filter_var($value, FILTER_VALIDATE_EMAIL) ? $errors[$field][] = "$field must be a valid email" : null,
-                    'min'      => is_numeric($value) && $value < (int) $param ? $errors[$field][]  = "$field must be >= $param" : null,
-                    'max'      => is_numeric($value) && $value > (int) $param ? $errors[$field][]  = "$field must be <= $param" : null,
+                    'required' => $this->validateRequired($field, $value, $errors),
+                    'string'   => $this->validateString($field, $value, $errors),
+                    'numeric'  => $this->validateNumeric($field, $value, $errors),
+                    'email'    => $this->validateEmail($field, $value, $errors),
+                    'min'      => $this->validateMin($field, $value, $param, $errors),
+                    'max'      => $this->validateMax($field, $value, $param, $errors),
+                    'image'    => $this->validateImage($field, $value, $errors),
+                    'mimes'    => $this->validateMimes($field, $value, $param, $errors),
+                    'max_file' => $this->validateMaxFile($field, $value, $param, $errors),
                     default    => null
                 };
             }
@@ -380,13 +388,239 @@ public function getHeaders(): array
         return $this->all();
     }
 
+/**
+ * Parse rule to get rule name and parameter
+ */
     private function parseRule(string $rule): array
     {
-        if (str_contains($rule, ':')) {
-            return explode(':', $rule, 2);
-        }
-        return [$rule, null];
+        $parts    = explode(':', $rule);
+        $ruleName = $parts[0];
+        $param    = $parts[1] ?? null;
+
+        return [$ruleName, $param];
     }
+
+/**
+ * Validate required field
+ */
+    private function validateRequired(string $field, $value, array &$errors): void
+    {
+        if (is_array($value)) {
+            // For file uploads
+            if (! isset($value['error']) || $value['error'] === UPLOAD_ERR_NO_FILE) {
+                $errors[$field][] = "$field is required";
+            }
+        } else {
+            // For regular fields
+            if ($value === null || $value === '') {
+                $errors[$field][] = "$field is required";
+            }
+        }
+    }
+
+/**
+ * Validate string field
+ */
+    private function validateString(string $field, $value, array &$errors): void
+    {
+        if ($value !== null && $value !== '' && ! is_string($value)) {
+            $errors[$field][] = "$field must be a string";
+        }
+    }
+
+/**
+ * Validate numeric field
+ */
+    private function validateNumeric(string $field, $value, array &$errors): void
+    {
+        if ($value !== null && $value !== '' && ! is_numeric($value)) {
+            $errors[$field][] = "$field must be numeric";
+        }
+    }
+
+/**
+ * Validate email field
+ */
+    private function validateEmail(string $field, $value, array &$errors): void
+    {
+        if ($value !== null && $value !== '' && ! filter_var($value, FILTER_VALIDATE_EMAIL)) {
+            $errors[$field][] = "$field must be a valid email";
+        }
+    }
+
+/**
+ * Validate minimum value/length
+ */
+    private function validateMin(string $field, $value, $param, array &$errors): void
+    {
+        if ($value === null || $value === '') {
+            return;
+        }
+
+        if (is_numeric($value)) {
+            if ($value < (int) $param) {
+                $errors[$field][] = "$field must be at least $param";
+            }
+        } elseif (is_string($value)) {
+            if (strlen($value) < (int) $param) {
+                $errors[$field][] = "$field must be at least $param characters";
+            }
+        }
+    }
+
+/**
+ * Validate maximum value/length
+ */
+    private function validateMax(string $field, $value, $param, array &$errors): void
+    {
+        if ($value === null || $value === '') {
+            return;
+        }
+
+        if (is_numeric($value)) {
+            if ($value > (int) $param) {
+                $errors[$field][] = "$field must be less than or equal to $param";
+            }
+        } elseif (is_string($value)) {
+            if (strlen($value) > (int) $param) {
+                $errors[$field][] = "$field must be less than $param characters";
+            }
+        }
+    }
+
+/**
+ * Validate image file
+ */
+    private function validateImage(string $field, $value, array &$errors): void
+    {
+        if (! is_array($value) || ! isset($value['error'])) {
+            $errors[$field][] = "$field must be an image file";
+            return;
+        }
+
+        // Check if file was uploaded
+        if ($value['error'] === UPLOAD_ERR_NO_FILE) {
+            return; // Not required, so skip if no file
+        }
+
+        if ($value['error'] !== UPLOAD_ERR_OK) {
+            $errors[$field][] = "$field upload failed";
+            return;
+        }
+
+        // Check if it's actually an image
+        $allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
+        $finfo        = finfo_open(FILEINFO_MIME_TYPE);
+        $mimeType     = finfo_file($finfo, $value['tmp_name']);
+        finfo_close($finfo);
+
+        if (! in_array($mimeType, $allowedTypes)) {
+            $errors[$field][] = "$field must be a valid image (JPEG, PNG, GIF, WebP, SVG)";
+        }
+    }
+
+/**
+ * Validate file MIME types
+ */
+    private function validateMimes(string $field, $value, $param, array &$errors): void
+    {
+        if (! is_array($value) || ! isset($value['error']) || $value['error'] === UPLOAD_ERR_NO_FILE) {
+            return;
+        }
+
+        if ($value['error'] !== UPLOAD_ERR_OK) {
+            return; // Error handled by required rule
+        }
+
+        $allowedTypes = explode(',', $param);
+        $finfo        = finfo_open(FILEINFO_MIME_TYPE);
+        $mimeType     = finfo_file($finfo, $value['tmp_name']);
+        finfo_close($finfo);
+
+        $extension = pathinfo($value['name'], PATHINFO_EXTENSION);
+
+        // Check both MIME type and extension for safety
+        $isValid = in_array($mimeType, $this->mapExtensionsToMimeTypes($allowedTypes)) ||
+        in_array(strtolower($extension), array_map('strtolower', $allowedTypes));
+
+        if (! $isValid) {
+            $errors[$field][] = "$field must be of type: " . str_replace(',', ', ', $param);
+        }
+    }
+
+/**
+ * Validate maximum file size (in KB)
+ */
+    private function validateMaxFile(string $field, $value, $param, array &$errors): void
+    {
+        if (! is_array($value) || ! isset($value['error']) || $value['error'] === UPLOAD_ERR_NO_FILE) {
+            return;
+        }
+
+        if ($value['error'] !== UPLOAD_ERR_OK) {
+            return; // Error handled by required rule
+        }
+
+        $maxSize = (int) $param * 1024; // Convert KB to bytes
+        if ($value['size'] > $maxSize) {
+            $errors[$field][] = "$field must be less than $param KB";
+        }
+    }
+
+/**
+ * Map file extensions to MIME types
+ */
+    private function mapExtensionsToMimeTypes(array $extensions): array
+    {
+        $mimeMap = [
+            'jpg'  => 'image/jpeg',
+            'jpeg' => 'image/jpeg',
+            'png'  => 'image/png',
+            'gif'  => 'image/gif',
+            'webp' => 'image/webp',
+            'svg'  => 'image/svg+xml',
+            'pdf'  => 'application/pdf',
+            'doc'  => 'application/msword',
+            'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'txt'  => 'text/plain',
+        ];
+
+        $mimes = [];
+        foreach ($extensions as $ext) {
+            $ext = strtolower(trim($ext));
+            if (isset($mimeMap[$ext])) {
+                $mimes[] = $mimeMap[$ext];
+            }
+        }
+
+        return array_unique($mimes);
+    }
+
+/**
+ * Check if request has file
+ */
+    public function hasFile(string $field): bool
+    {
+        return isset($_FILES[$field]) && $_FILES[$field]['error'] !== UPLOAD_ERR_NO_FILE;
+    }
+
+/**
+ * Get uploaded file data
+ */
+    public function file(string $field): ?array
+    {
+        return $_FILES[$field] ?? null;
+    }
+
+// end validation
+
+    // private function parseRule(string $rule): array
+    // {
+    //     if (str_contains($rule, ':')) {
+    //         return explode(':', $rule, 2);
+    //     }
+    //     return [$rule, null];
+    // }
 
     public function errors(): array
     {
@@ -522,14 +756,14 @@ public function getHeaders(): array
     }
 
     public function files(?string $key = null)
-{
-    if ($key === null) {
-        return $_FILES;
+    {
+        if ($key === null) {
+            return $_FILES;
+        }
+        return $_FILES[$key] ?? null;
     }
-    return $_FILES[$key] ?? null;
-}
     // start sessions
-   public function getSession(): SessionInterface
+    public function getSession(): SessionInterface
     {
         return $this->session;
     }
@@ -539,7 +773,7 @@ public function getHeaders(): array
         $this->session = $session;
     }
 
-     public function hasSession(): bool
+    public function hasSession(): bool
     {
         return $this->session !== null;
     }
